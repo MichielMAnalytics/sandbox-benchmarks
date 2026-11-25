@@ -47,7 +47,7 @@ uv sync
 | E2B                | `benchmarks.e2b`                | `E2B_API_KEY`                                                                                       |
 | Cloudflare sandbox | `benchmarks.cloudflare_sandbox` | `CLOUDFLARE_SANDBOX_URL` and `CLOUDFLARE_SANDBOX_KEY`, for your deployment of `cloudflare_sandbox/` |
 | Daytona            | `benchmarks.daytona`            | `DAYTONA_API_KEY`                                                                                   |
-| Vercel             | `benchmarks.vercel`             | `VERCEL_OIDC_TOKEN`, or `VERCEL_TOKEN`, `VERCEL_TEAM_ID` and `VERCEL_PROJECT_ID`                    |
+| Vercel             | `benchmarks.vercel`             | `VERCEL_OIDC_TOKEN`, which `vercel env pull` writes and which lasts 12 hours                        |
 | boat.dev           | `benchmarks.boat`               | `BOAT_API_KEY`, and `ssh` on your machine                                                           |
 
 Run a module from the root of the repo, with the number of sessions per case (5 if you leave it out):
@@ -81,6 +81,13 @@ deletes the VM:
 ```bash
 PROJECT=my-project ./gcp_bench.sh 15
 ```
+
+## How host functions are called
+
+Only Logfire has calls from the sandbox to the host built in. For the others we built a request and reply on
+whatever the provider's docs show for talking to a running program. The docstring at the top of each module in
+`benchmarks/`, such as [`benchmarks/modal.py`](benchmarks/modal.py), says why it was done that way and what it
+costs; the one in [`benchmarks/shared.py`](benchmarks/shared.py) covers what they have in common.
 
 ## Results
 

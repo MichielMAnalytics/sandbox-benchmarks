@@ -1,6 +1,6 @@
-"""The same tune as play_tune.py, run in a Vercel sandbox. Needs VERCEL_TOKEN, VERCEL_TEAM_ID and VERCEL_PROJECT_ID.
+"""The same tune as play_tune.py, run in a Vercel sandbox. Needs VERCEL_OIDC_TOKEN.
 
-Follows the stdin of a running command in https://vercel.com/docs/sandbox/python-sdk-reference
+Follows the stdin of a running command in https://vercel.com/docs/sandbox/sdk/python
 """
 
 import json

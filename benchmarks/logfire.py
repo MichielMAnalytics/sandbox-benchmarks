@@ -1,6 +1,20 @@
 """Logfire Agent Sandboxes, opening a session at each checkout.
 
 Run with `uv run -m benchmarks.logfire [n] [--save LOCATION]`; see `main` in shared.py.
+
+Design decisions
+----------------
+
+`feed_run(code, external_lookup={...})` is part of the API. The code runs in Monty
+(https://github.com/pydantic/monty), which stops at a call to an external function and hands it to the host,
+so nothing passes through JSON or stdout: in our tests tuples, `bytes`, sets, datetimes and integer dict keys
+arrived with their types, and a `ValueError` raised on the host was caught as one in the sandbox. The cost is
+that Monty is not CPython. It runs a subset of Python with few of the standard library's modules and no
+third-party packages, and the hosted service stopped a feed that computed for more than 50ms, not counting
+time waiting on the host.
+
+`logfire_turbo.py` is the same pool with `pre_warm=5`, which keeps a buffer of sessions ready to use at
+checkout.
 """
 
 import asyncio

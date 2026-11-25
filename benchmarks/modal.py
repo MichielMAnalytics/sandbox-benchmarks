@@ -1,6 +1,15 @@
 """Modal: the REPL runs over the stdin and stdout of `sandbox.exec`.
 
 Run with `uv run -m benchmarks.modal [n] [--save LOCATION]`; see `main` in shared.py.
+
+Design decisions
+----------------
+
+JSON lines over the stdin and stdout of `sandbox.exec`, which is how Modal's code interpreter example
+(https://modal.com/docs/examples/simple_code_interpreter) drives a long-running process in a sandbox.
+
+The protocol is JSON lines over the program's stdin and stdout, and the docstring of shared.py has what that
+costs on every provider that uses it.
 """
 
 from collections.abc import AsyncIterator

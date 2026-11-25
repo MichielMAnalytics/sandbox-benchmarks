@@ -1,6 +1,18 @@
 """boat.dev: the REPL runs over `ssh`, since its commands have no stdin.
 
 Run with `uv run -m benchmarks.boat [n] [--save LOCATION]`; see `main` in shared.py.
+
+Design decisions
+----------------
+
+Its commands have no stdin, and its docs say to use SSH (https://docs.boat.dev/ssh-access) for piped input, so
+the JSON lines go over `ssh`. Each session makes a new key pair and pins the host key it gets from the API. It
+needs an `ssh` client and outbound access to the sandbox's SSH port, and opening the connection is part of
+every session's time.
+
+The protocol is JSON lines over the program's stdin and stdout, and the docstring of shared.py has what that
+costs on every provider that uses it. boat.dev's docs have nothing on calling functions on the host: the page
+linked above only documents connecting over SSH, which is what we send those JSON lines over.
 """
 
 import asyncio

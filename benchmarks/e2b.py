@@ -1,6 +1,16 @@
 """E2B: the REPL runs as a background command, fed with `send_stdin`.
 
 Run with `uv run -m benchmarks.e2b [n] [--save LOCATION]`; see `main` in shared.py.
+
+Design decisions
+----------------
+
+`run_code` gives running code no way to receive anything, so the REPL is a background command fed with
+`send_stdin`, the protocol in E2B's DSPy guide (https://docs.e2b.dev/agents/dspy). We use E2B's blocking
+client, which holds up the event loop while it waits.
+
+The protocol is JSON lines over the program's stdin and stdout, and the docstring of shared.py has what that
+costs on every provider that uses it.
 """
 
 from collections.abc import AsyncIterator, Iterator

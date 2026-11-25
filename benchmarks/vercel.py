@@ -1,6 +1,18 @@
 """Vercel Sandbox: the REPL runs over the stdin of a running command.
 
 Run with `uv run -m benchmarks.vercel [n] [--save LOCATION]`; see `main` in shared.py.
+
+Design decisions
+----------------
+
+JSON lines over the stdin of a running command, from the Python SDK reference
+(https://vercel.com/docs/sandbox/sdk/python). Each line written to stdin is an HTTPS request of its own, about
+200ms from London, which is most of what a call costs.
+
+The protocol is JSON lines over the program's stdin and stdout, and the docstring of shared.py has what that
+costs on every provider that uses it. Vercel's docs have nothing on calling functions on the host: the page
+linked above only documents writing to the stdin of a running command, which is what we send those JSON lines
+over.
 """
 
 import subprocess

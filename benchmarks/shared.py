@@ -1,8 +1,31 @@
 """The four benchmark cases, and the pieces the providers without host function calls share.
 
 Each provider module in this directory has a `Pool`, whose `checkout()` gives a new `Session`. Logfire has
-`feed_run` with host functions built in. The others do not, so each runs a small REPL in the sandbox, using the transport
-its docs recommend (see the scripts in play_tune/).
+`feed_run` with host functions built in. The others do not, so each runs a small REPL in the sandbox, using
+the transport its docs recommend (see the scripts in play_tune/).
+
+Design decisions
+----------------
+
+Only Logfire has calls from the sandbox to the host built in. For the others we used whatever the provider's
+own docs show for talking to a running program, and built the same request and reply on top: the code in the
+sandbox writes a line of JSON naming a function and its arguments, blocks, and reads a line of JSON back.
+`STDIO_REPL` and `StdioSession` below are the two ends of it. Daytona carries the same JSON over HTTP
+(see daytona.py).
+
+Three things follow from that protocol on every provider but Logfire:
+
+- Data: arguments and results have to survive JSON. A tuple arrives as a list, a dict's integer keys arrive as
+  strings, and `bytes`, `set`, `datetime` and instances of your own classes cannot be sent at all. An
+  exception raised by a host function reaches the sandbox as a `RuntimeError` carrying its `repr`, so `except
+  ValueError` in the sandbox does not catch a `ValueError` from the host.
+- Reliability: the channel is the program's stdout, so anything else written there breaks the protocol. The
+  REPL points `sys.stdout` at stderr to stop `print` doing that, but a subprocess or a C extension writing to
+  file descriptor 1 still would. There are no timeouts: if the host stops answering, the sandbox waits for
+  ever, and is billed until something deletes it. Calls are answered one at a time.
+- Security: the request is written by the code you are sandboxing, so the function name and arguments are
+  untrusted input. The host only looks the name up in the dict of functions it was given, but it passes the
+  arguments on unchecked, so each host function has to validate its own.
 
 This must not import the play_tune scripts: they import `sounddevice`, which fails on a machine with no audio.
 """

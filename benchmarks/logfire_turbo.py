@@ -2,6 +2,8 @@
 
 Run with `uv run -m benchmarks.logfire_turbo [n] [--save LOCATION]`; see `main` in shared.py.
 
+See the docstring of logfire.py for design decisions.
+
 Needs pydantic-monty-client 1.7.
 """
 

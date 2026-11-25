@@ -71,7 +71,7 @@ Credentials:
   lines. Logfire reads `LOGFIRE_API_KEY`, so export one of the two under that name; `gcp_bench.sh` uses the US
   one. It is git-ignored and nothing loads it automatically, so source it first.
 - Modal uses the credentials written by `modal setup`.
-- Vercel needs `VERCEL_TOKEN`, `VERCEL_TEAM_ID` and `VERCEL_PROJECT_ID`; Cloudflare sandboxes need
+- Vercel needs `VERCEL_OIDC_TOKEN`; Cloudflare sandboxes need
   `CLOUDFLARE_SANDBOX_URL` (`wss://...workers.dev`) and `CLOUDFLARE_SANDBOX_KEY` (the Worker's `API_KEY`); boat
   needs `BOAT_API_KEY`. All go in `.env`.
 
@@ -113,7 +113,7 @@ includes creating the sandbox and starting the REPL, and for all of those but Cl
 - boat refuses starts over its limit with `429 rate_limited`: 5 a minute, 25 an hour and 75 a day on the trial,
   12, 60 and 200 on the $20 plan. The benchmark waits and tries again without timing the refused attempt.
 - boat's `ssh` needs `IdentitiesOnly=yes`, or it offers the agent's keys first and is disconnected.
-- Vercel takes `VERCEL_OIDC_TOKEN` in place of the three variables; `vercel env pull` writes it and it lasts
+- Vercel's `VERCEL_OIDC_TOKEN` comes from `vercel env pull` in a linked project, and it lasts
   12 hours. Each reply to a call is its own HTTPS request, about 200ms from London, and stopping and deleting
   a sandbox takes about 1.4 seconds.
 - The Cloudflare sandbox Worker deploys under the name `sandbox-host-function`.

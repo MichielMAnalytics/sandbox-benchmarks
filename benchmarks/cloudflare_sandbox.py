@@ -1,6 +1,21 @@
 """Cloudflare sandboxes: the REPL runs over a WebSocket to the Worker in cloudflare_sandbox/.
 
 Run with `uv run -m benchmarks.cloudflare_sandbox [n] [--save LOCATION]`; see `main` in shared.py.
+
+Design decisions
+----------------
+
+A sandbox can only be reached from a Worker, so you deploy the one in `cloudflare_sandbox/` and the JSON lines
+travel over a WebSocket that it joins to the program's stdin and stdout, the arrangement Cloudflare shows for
+a terminal in the browser
+(https://developers.cloudflare.com/sandbox/commands/open-a-terminal-in-the-browser/). That Worker is a public
+address that runs whatever program it is sent, guarded by one shared key, so the key needs the care of a
+password. The container is destroyed when the socket closes, so a dropped connection ends the session.
+
+The protocol is JSON lines over the program's stdin and stdout, and the docstring of shared.py has what that
+costs on every provider that uses it. Cloudflare's docs have nothing on calling functions on the host: the
+page linked above only documents joining a WebSocket to a process in the sandbox, which is what we send those
+JSON lines over.
 """
 
 import os

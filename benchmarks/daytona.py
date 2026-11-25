@@ -1,6 +1,18 @@
 """Daytona: a Flask broker runs in the sandbox, and this machine polls it through the preview URL.
 
 Run with `uv run -m benchmarks.daytona [n] [--save LOCATION]`; see `main` in shared.py.
+
+Design decisions
+----------------
+
+A small Flask server runs in the sandbox and holds each call open; the host long-polls it through the
+sandbox's preview URL and posts the result back, as in Daytona's DSPy guide
+(https://www.daytona.io/docs/en/guides/rlm/dspy-rlms). Each call costs several HTTP requests. The broker
+accepts anything that reaches it: the code being sandboxed can post to it on `localhost` and so forge results,
+and from outside it is protected only by the preview token. It also needs Flask in the image.
+
+The JSON is the same as on the other providers, so the data and security points in the docstring of shared.py
+apply here too; the one about stdout does not, since the calls go over HTTP.
 """
 
 import asyncio
