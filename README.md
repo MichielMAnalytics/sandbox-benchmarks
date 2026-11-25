@@ -1,30 +1,30 @@
 # Sandbox Benchmarks
 
 An experiment comparing how code running in a remote sandbox can call functions on the host machine, across
-seven sandbox providers: Logfire Agent Sandboxes, Modal, E2B, Daytona, Vercel Sandbox, Cloudflare sandboxes
+seven sandbox providers: Pydantic Logfire Agent Sandboxes, Modal, E2B, Daytona, Vercel Sandbox, Cloudflare sandboxes
 and boat.dev.
 
 Each script in `play_tune/` runs the same program in a sandbox, a tune that calls `play(note, seconds)` 78
-times, and the host plays each note through the speakers. The modules in `benchmarks/` time four cases on each provider.
+times, and the host plays each note through the speakers. The modules in `benchmarks/` time four
+cases on each provider.
 
 <!-- results: written by results.py -->
 
-Median milliseconds from GCP us-east4-a, 2026-11-24 to 2026-11-25, from checking out a new session to that session ending:
+Median milliseconds from GCP us-east4-a, 2026-11-25, from asking for a new session to having the result:
 
-| Provider           | `1 + 1`     | one external call | 5 feeds    | 10 feeds x 5 calls |
-| ------------------ | ----------- | ----------------- | ---------- | ------------------ |
-| Logfire (turbo)    | 21          | 33                | 64         | 649                |
-| Logfire            | 94 (4.5x)   | 107 (3.2x)        | 144 (2.2x) | 738 (1.1x)         |
-| Modal              | 398 (19x)   | 494 (15x)         | 482 (7.5x) | 1407 (2.2x)        |
-| Daytona            | 582 (28x)   | 592 (18x)         | 959 (15x)  | 3182 (4.9x)        |
-| E2B                | 698 (33x)   | 678 (21x)         | 906 (14x)  | 4980 (7.7x)        |
-| Cloudflare sandbox | 849 (40x)   | 902 (27x)         | 933 (15x)  | 2668 (4.1x)        |
-| Vercel             | 2370 (113x) | 2246 (68x)        | 2434 (38x) | 6203 (9.6x)        |
-| boat.dev           | 2524 (120x) | 3005 (91x)        | 2853 (45x) | 7387 (11x)         |
+| Provider                                                                       | `1 + 1`    | one external call | 5 feeds    | 10 feeds x 5 calls |
+| ------------------------------------------------------------------------------ | ---------- | ----------------- | ---------- | ------------------ |
+| [Pydantic Logfire (turbo)](https://pydantic.dev/docs/logfire/agent-sandboxes/) | 26         | 32                | 67         | 618                |
+| [Pydantic Logfire](https://pydantic.dev/docs/logfire/agent-sandboxes/)         | 99 (3.8x)  | 107 (3.3x)        | 136 (2.0x) | 847 (1.4x)         |
+| [Daytona](https://www.daytona.io)                                              | 133 (5.1x) | 561 (18x)         | 909 (14x)  | 3092 (5.0x)        |
+| [Modal](https://modal.com/docs/guide/sandboxes)                                | 346 (13x)  | 471 (15x)         | 457 (6.8x) | 1364 (2.2x)        |
+| [E2B](https://e2b.dev)                                                         | 531 (20x)  | 528 (16x)         | 755 (11x)  | 5105 (8.3x)        |
+| [Cloudflare sandbox](https://developers.cloudflare.com/sandbox/)               | 848 (33x)  | 692 (22x)         | 785 (12x)  | 1875 (3.0x)        |
+| [Vercel](https://vercel.com/docs/sandbox)                                      | 915 (35x)  | 1030 (32x)        | 1253 (19x) | 5316 (8.6x)        |
+| [boat.dev](https://boat.dev)                                                   | 1443 (56x) | 2817 (88x)        | 2890 (43x) | 7910 (13x)         |
 
-- Logfire (turbo): Logfire with `pre_warm=5`, which keeps a buffer of sessions ready to use at checkout.
+- Pydantic Logfire (turbo): Pydantic Logfire with `pre_warm=5`: the client keeps five sessions open in the background, so asking for one takes a session that already exists instead of waiting for one to start. They are opened before the timer starts, and the second the benchmark waits between sessions is enough for the pool to refill. Every other row starts its sandbox inside the timed part.
 - Daytona: The sandboxes are in Daytona's `us` region.
-- Cloudflare sandbox: Times leave out deleting the container, which the Worker does after the session ends.
 - boat.dev: Five sessions per case, to stay inside boat.dev's start limits. Its sandboxes are all in the EU.
 
 <!-- /results -->
@@ -39,16 +39,16 @@ uv sync
 . ./.env
 ```
 
-| Provider           | Module                          | Needs                                                                                               |
-| ------------------ | ------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Logfire            | `benchmarks.logfire`            | `LOGFIRE_API_KEY`                                                                                   |
-| Logfire (turbo)    | `benchmarks.logfire_turbo`      | `LOGFIRE_API_KEY`                                                                                   |
-| Modal              | `benchmarks.modal`              | `modal setup` to have been run                                                                      |
-| E2B                | `benchmarks.e2b`                | `E2B_API_KEY`                                                                                       |
-| Cloudflare sandbox | `benchmarks.cloudflare_sandbox` | `CLOUDFLARE_SANDBOX_URL` and `CLOUDFLARE_SANDBOX_KEY`, for your deployment of `cloudflare_sandbox/` |
-| Daytona            | `benchmarks.daytona`            | `DAYTONA_API_KEY`                                                                                   |
-| Vercel             | `benchmarks.vercel`             | `VERCEL_OIDC_TOKEN`, which `vercel env pull` writes and which lasts 12 hours                        |
-| boat.dev           | `benchmarks.boat`               | `BOAT_API_KEY`, and `ssh` on your machine                                                           |
+| Provider                 | Module                          | Needs                                                                                               |
+| ------------------------ | ------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Pydantic Logfire         | `benchmarks.logfire`            | `LOGFIRE_API_KEY`                                                                                   |
+| Pydantic Logfire (turbo) | `benchmarks.logfire_turbo`      | `LOGFIRE_API_KEY`                                                                                   |
+| Modal                    | `benchmarks.modal`              | `modal setup` to have been run                                                                      |
+| E2B                      | `benchmarks.e2b`                | `E2B_API_KEY`                                                                                       |
+| Cloudflare sandbox       | `benchmarks.cloudflare_sandbox` | `CLOUDFLARE_SANDBOX_URL` and `CLOUDFLARE_SANDBOX_KEY`, for your deployment of `cloudflare_sandbox/` |
+| Daytona                  | `benchmarks.daytona`            | `DAYTONA_API_KEY`                                                                                   |
+| Vercel                   | `benchmarks.vercel`             | `VERCEL_OIDC_TOKEN`, which `vercel env pull` writes and which lasts 12 hours                        |
+| boat.dev                 | `benchmarks.boat`               | `BOAT_API_KEY`, and `ssh` on your machine                                                           |
 
 Run a module from the root of the repo, with the number of sessions per case (5 if you leave it out):
 
@@ -56,10 +56,11 @@ Run a module from the root of the repo, with the number of sessions per case (5 
 uv run -m benchmarks.modal 15
 ```
 
-It runs the four cases in turn and prints a line for each, with the median, minimum and maximum in milliseconds:
+It runs the four cases in turn and prints a line for each. The median, minimum and maximum are milliseconds
+from asking for a session to having the result; `end` is the median time ending the session then took:
 
 ```
-modal              1 + 1                p50     398  min     339  max    1915 ms  (n=15)
+modal              1 + 1                p50     346  min     252  max    1901 ms  end    19 ms  (n=15)
 ```
 
 Each session creates a sandbox and deletes it afterwards, and the providers bill for them.
@@ -84,8 +85,12 @@ PROJECT=my-project ./gcp_bench.sh 15
 
 ## How host functions are called
 
-Only Logfire has calls from the sandbox to the host built in. For the others we built a request and reply on
-whatever the provider's docs show for talking to a running program. The docstring at the top of each module in
+`1 + 1` does not call the host, so it uses each provider's own way of running a program, such as E2B's
+`run_code` or `python -c` through Modal's `exec`, and reads what it prints.
+
+The other three cases call functions on the host or keep state between feeds. Only Pydantic Logfire has that
+built in. For the others we built a request and reply on whatever the provider's docs show for talking to a
+running program, and it is started only for those cases. The docstring at the top of each module in
 `benchmarks/`, such as [`benchmarks/modal.py`](benchmarks/modal.py), says why it was done that way and what it
 costs; the one in [`benchmarks/shared.py`](benchmarks/shared.py) covers what they have in common.
 
@@ -93,6 +98,9 @@ costs; the one in [`benchmarks/shared.py`](benchmarks/shared.py) covers what the
 
 Each provider's latest run is a JSON file in `results/`, and `results.py` builds the table above from them. The
 figure in brackets is how many times slower that provider is than the fastest at that case.
+
+The times in the table stop when the result arrives. Ending the session, which for most providers means
+deleting the sandbox, is timed separately and kept in each file under `end`, since nobody waits for it.
 
 ```bash
 uv run results.py             # print the table; --ranges for minimum to maximum

@@ -21,12 +21,13 @@ seven sandbox providers. Each script runs the same sandboxed program, a tune tha
 
 `benchmarks/` has one module per provider, each running the same four cases:
 
-- `shared.py`: the `Pool` and `Session` base classes, the four cases, the loop that times each from checking
-  out a new session to that session ending, and the REPL the providers other than Logfire and Daytona run in
+- `shared.py`: the `Pool` and `Session` base classes, the four cases, the loop that times each from asking
+  for a new session to having the result, and the REPL the providers other than Logfire and Daytona run in
   the sandbox.
 - `logfire.py`, `logfire_turbo.py` (Logfire with `pre_warm`), `modal.py`, `e2b.py`, `daytona.py`, `vercel.py`,
-  `cloudflare_sandbox.py`, `boat.py`: a `Pool` whose `checkout()` gives a `Session` with Monty's
-  `feed_run(code, external_lookup=...)` interface. Each but Logfire runs a small REPL in the sandbox over the
+  `cloudflare_sandbox.py`, `boat.py`: a `Pool` whose `checkout()` gives a `Session`. Its `run(code)` runs a program
+  the provider's own way and is what `1 + 1` uses; its `feed_run(code, external_lookup=...)` has Monty's
+  interface, and for that each provider but Logfire starts a small REPL in the sandbox over the
   same transport as its `play_tune_*.py` script, so state survives between feeds and each feed returns its
   last expression. To add a provider, add a module with a `Pool` and a `Session` and call `main`.
 
@@ -92,17 +93,18 @@ Never print, log or commit key values.
 ## Benchmark results
 
 `results/` has one JSON file per provider, holding its latest run: the date, where it was run from, the number
-of sessions and, for each case, the median, minimum and maximum in milliseconds and the times themselves. A
+of sessions and, for each case, the median, minimum and maximum in milliseconds, the times themselves, and
+the same under `end` for ending the session. A
 benchmark run with `--save LOCATION` replaces its file, keeping the `note` of the one it replaces.
 `uv run results.py` prints the table and `uv run results.py --write` replaces the one in `README.md`; never edit
 that table or the numbers in the JSON files by hand.
 
 Only commit results run from a GCP VM in `us-east4` (`gcp_bench.sh` saves them and copies them back), since
-times from different places cannot be compared. The files from 2026-11-24 have no `times`: they were taken
-from a table of medians and ranges.
+times from different places cannot be compared.
 
-Each time runs from entering `checkout()` to the session having ended, so for every provider but Logfire it
-includes creating the sandbox and starting the REPL, and for all of those but Cloudflare sandboxes, deleting it.
+Each time runs from entering `checkout()` to having the result, so for every provider but Logfire it includes
+creating the sandbox, and for the three cases that use `feed_run`, starting the REPL. Ending the session, which
+for most means deleting the sandbox, is timed separately and saved under `end`; the table does not show it.
 
 ## Known behaviour
 
@@ -118,7 +120,8 @@ includes creating the sandbox and starting the REPL, and for all of those but Cl
   a sandbox takes about 1.4 seconds.
 - The Cloudflare sandbox Worker deploys under the name `sandbox-host-function`.
 - Closing the WebSocket ends a Cloudflare sandbox session, and the Worker destroys the container after that,
-  so its times do not include deletion as the other providers' do.
+  so its `end` times are near zero and do not include the deletion. The first message on the socket is the
+  program to run, so one of its sessions can do a `run` or a series of `feed_run`s, not both.
 - Logfire refuses sessions with `worker_unavailable` for about 20 seconds after 32 in a row. The benchmark waits
   and tries again without timing the refused attempt, and prints how many were refused.
 - The Daytona sandboxes are in its `us` region, the default of the organisation the results were run with.

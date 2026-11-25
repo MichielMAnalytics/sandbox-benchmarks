@@ -1,8 +1,9 @@
 """The four benchmark cases, and the pieces the providers without host function calls share.
 
-Each provider module in this directory has a `Pool`, whose `checkout()` gives a new `Session`. Logfire has
-`feed_run` with host functions built in. The others do not, so each runs a small REPL in the sandbox, using
-the transport its docs recommend (see the scripts in play_tune/).
+Each provider module in this directory has a `Pool`, whose `checkout()` gives a new `Session`. `1 + 1` uses
+the session's `run`, which is the provider's own way of running a program. The other cases use `feed_run`,
+which keeps state and calls host functions: Logfire has that built in, and each of the others starts a small
+REPL in the sandbox for it, using the transport its docs recommend (see the scripts in play_tune/).
 
 Design decisions
 ----------------
@@ -48,7 +49,14 @@ RESULTS = Path(__file__).parent.parent / 'results'
 
 
 class Session(ABC):
-    """One sandbox, with the interface of a Monty session."""
+    """One sandbox. A session is used for one `run`, or for any number of `feed_run`s."""
+
+    @abstractmethod
+    async def run(self, code: str) -> str:
+        """Run a program the way the provider's API offers and return what it printed.
+
+        This has no state and no host functions, so it needs none of the machinery `feed_run` does.
+        """
 
     @abstractmethod
     async def feed_run(self, code: str, external_lookup: Functions | None = None) -> Any:
@@ -91,7 +99,7 @@ EXT = {'external_lookup': {'get_name': get_name, 'double': double}}
 
 
 async def case_1_plus_1(s: Session) -> None:
-    assert await s.feed_run('1 + 1') == 2
+    assert (await s.run('print(1 + 1)')).strip() == '2'
 
 
 async def case_one_call(s: Session) -> None:
@@ -116,11 +124,25 @@ CASES = [
 ]
 
 
+def summary(times: list[float]) -> dict[str, Any]:
+    return {
+        'median': round(statistics.median(times)),
+        'min': round(min(times)),
+        'max': round(max(times)),
+        'times': [round(t) for t in times],
+    }
+
+
 async def run(key: str, pool: Pool, n: int) -> dict[str, Any]:
-    """Time n sessions of each case, print a line for each and return what `results/<key>.json` holds for them."""
+    """Time n sessions of each case, print a line for each and return what `results/<key>.json` holds for them.
+
+    The time that counts runs from asking for a session to having the result. Ending the session, which for
+    most providers means deleting the sandbox, is timed separately: nobody waits for it.
+    """
     cases: dict[str, Any] = {}
     for name, case in CASES:
         times: list[float] = []
+        ends: list[float] = []
         refused = 0
         while len(times) < n:
             await asyncio.sleep(GAP)
@@ -128,6 +150,7 @@ async def run(key: str, pool: Pool, n: int) -> dict[str, Any]:
             try:
                 async with pool.checkout() as s:
                     await case(s)
+                    done = time.perf_counter()
             except Exception as e:
                 # Logfire refuses sessions for about 20 seconds after 32 in a row, and boat allows a number of
                 # starts a minute; those are not timed
@@ -136,18 +159,15 @@ async def run(key: str, pool: Pool, n: int) -> dict[str, Any]:
                 refused += 1
                 await asyncio.sleep(REFUSED_WAIT)
                 continue
-            times.append((time.perf_counter() - start) * 1000)
+            times.append((done - start) * 1000)
+            ends.append((time.perf_counter() - done) * 1000)
         print(
-            f'{key:<18} {name:<20} p50 {statistics.median(times):7.0f}  '
-            f'min {min(times):7.0f}  max {max(times):7.0f} ms  (n={n})' + (f'  refused {refused}' if refused else ''),
+            f'{key:<18} {name:<20} p50 {statistics.median(times):7.0f}  min {min(times):7.0f}  '
+            f'max {max(times):7.0f} ms  end {statistics.median(ends):5.0f} ms  (n={n})'
+            + (f'  refused {refused}' if refused else ''),
             flush=True,
         )
-        cases[name] = {
-            'median': round(statistics.median(times)),
-            'min': round(min(times)),
-            'max': round(max(times)),
-            'times': [round(t) for t in times],
-        }
+        cases[name] = {**summary(times), 'end': summary(ends)}
         if refused:
             cases[name]['refused'] = refused
     return cases
@@ -158,10 +178,10 @@ async def run_pool(key: str, pool: Pool, n: int) -> dict[str, Any]:
         return await run(key, pool, n)
 
 
-def main(key: str, provider: str, pool: Pool) -> None:
-    """Run the four cases against a pool, each timed from checking out a new session to that session ending.
+def main(key: str, provider: str, url: str, pool: Pool) -> None:
+    """Run the four cases against a pool, each timed from asking for a new session to having the result.
 
-    `key` names the results file and `provider` is the name shown in the table. With `--save LOCATION` the
+    `key` names the results file, and `provider` and `url` are the name shown in the table and what it links to. With `--save LOCATION` the
     run replaces `results/<key>.json`, keeping the note of the file it replaces.
     """
     parser = argparse.ArgumentParser()
@@ -173,6 +193,7 @@ def main(key: str, provider: str, pool: Pool) -> None:
         path = RESULTS / f'{key}.json'
         result = {
             'provider': provider,
+            'url': url,
             'date': str(datetime.now(UTC).date()),
             'location': args.save,
             'sessions': args.n,
@@ -240,7 +261,15 @@ def answer(message: dict[str, Any], functions: Functions) -> dict[str, Any]:
 
 
 class StdioSession(Session):
-    """A session talking to STDIO_REPL; subclasses provide `write(line)` and `readline()`."""
+    """A session whose `feed_run` talks to STDIO_REPL.
+
+    Subclasses provide `run`, `start`, which starts the REPL in the sandbox, `write(line)` and `readline()`.
+    """
+
+    started = False
+
+    @abstractmethod
+    async def start(self) -> None: ...
 
     @abstractmethod
     async def write(self, line: str) -> None: ...
@@ -249,6 +278,9 @@ class StdioSession(Session):
     async def readline(self) -> str: ...
 
     async def feed_run(self, code: str, external_lookup: Functions | None = None) -> Any:
+        if not self.started:
+            await self.start()
+            self.started = True
         functions = external_lookup or {}
         await self.write(json.dumps({'feed': code, 'names': list(functions)}) + '\n')
         while True:

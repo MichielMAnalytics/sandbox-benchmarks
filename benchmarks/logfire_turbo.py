@@ -7,8 +7,8 @@ See the docstring of logfire.py for design decisions.
 Needs pydantic-monty-client 1.7.
 """
 
-from .logfire import LogfirePool
+from .logfire import URL, LogfirePool
 from .shared import main
 
 if __name__ == '__main__':
-    main('logfire_turbo', 'Logfire (turbo)', LogfirePool(pre_warm=5))
+    main('logfire_turbo', 'Pydantic Logfire (turbo)', URL, LogfirePool(pre_warm=5))

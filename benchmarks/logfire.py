@@ -26,10 +26,17 @@ import logfire
 
 from .shared import Functions, Pool, Session, main
 
+URL = 'https://pydantic.dev/docs/logfire/agent-sandboxes/'
+
 
 class LogfireSession(Session):
     def __init__(self, session: Any):
         self.session = session
+
+    async def run(self, code: str) -> str:
+        printed: list[str] = []
+        await self.session.feed_run(code, print_callback=lambda _stream, text: printed.append(text))
+        return ''.join(printed)
 
     async def feed_run(self, code: str, external_lookup: Functions | None = None) -> Any:
         return await self.session.feed_run(code, external_lookup=external_lookup)
@@ -56,4 +63,4 @@ class LogfirePool(Pool):
 
 
 if __name__ == '__main__':
-    main('logfire', 'Logfire', LogfirePool())
+    main('logfire', 'Pydantic Logfire', URL, LogfirePool())

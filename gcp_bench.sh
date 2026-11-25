@@ -3,7 +3,8 @@
 #
 #     ./gcp_bench.sh [n] [output-file]
 #
-# n is the number of sessions per case (default 15). PROJECT, ZONE and PROVIDERS can be set in the environment.
+# n is the number of sessions per case (default 15). PROJECT, ZONE and PROVIDERS can be set in the environment;
+# a provider written `name:n` gets its own number of sessions, as boat does by default to stay inside its limits.
 # The VM gets this repo's tracked files, the keys from .env and ~/.modal.toml. Logfire uses LOGFIRE_API_KEY_US.
 # The VM is deleted when this script exits, however it exits, and deletes itself after two hours if this
 # machine never gets that far.
@@ -14,7 +15,7 @@ N=${1:-15}
 OUT=${2:-gcp_bench_output.txt}
 PROJECT=${PROJECT:?set PROJECT to a GCP project}
 ZONE=${ZONE:-us-east4-a}
-PROVIDERS=${PROVIDERS:-logfire logfire_turbo modal daytona e2b vercel cloudflare_sandbox boat}
+PROVIDERS=${PROVIDERS:-logfire logfire_turbo modal daytona e2b vercel cloudflare_sandbox boat:5}
 VM=sandbox-bench-$(date +%s)
 GC=(gcloud compute --project "$PROJECT")
 
@@ -73,8 +74,12 @@ echo "# $(date -u +%FT%TZ) $(curl -s -H Metadata-Flavor:Google \
 # which Cloudflare location serves this VM, and how far away it is
 echo "# cloudflare $(curl -s https://www.cloudflare.com/cdn-cgi/trace | grep colo=) $(curl -s -o /dev/null \
     -w 'tcp connect %{time_connect}s' https://www.cloudflare.com/cdn-cgi/trace)"
-for provider in $PROVIDERS; do
-    uv run -m "benchmarks.$provider" "$N" --save "GCP $ZONE" </dev/null 2>&1 || echo "$provider FAILED"
+for entry in $PROVIDERS; do
+    # `name:n` gives that provider its own number of sessions
+    provider=${entry%%:*}
+    n=$N
+    [[ $entry == *:* ]] && n=${entry##*:}
+    uv run -m "benchmarks.$provider" "$n" --save "GCP $ZONE" </dev/null 2>&1 || echo "$provider FAILED"
 done
 REMOTE
 

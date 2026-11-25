@@ -25,14 +25,30 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from websockets.asyncio.client import connect
+from websockets.exceptions import ConnectionClosedOK
 
 from .shared import STDIO_REPL, Pool, StdioSession, main
 
 
 class CloudflareSandboxSession(StdioSession):
+    """The first message on the socket is the program the Worker starts, so a session runs one program."""
+
     def __init__(self, socket: Any):
         self.socket = socket
         self.buffer = ''
+
+    async def run(self, code: str) -> str:
+        await self.socket.send(code)
+        printed = ''
+        # the Worker closes the socket when the program ends
+        try:
+            while True:
+                printed += await self.socket.recv()
+        except ConnectionClosedOK:
+            return printed
+
+    async def start(self) -> None:
+        await self.socket.send(STDIO_REPL)
 
     async def write(self, line: str) -> None:
         await self.socket.send(line)
@@ -53,9 +69,13 @@ class CloudflareSandboxPool(Pool):
         headers = {'Authorization': f'Bearer {os.environ["CLOUDFLARE_SANDBOX_KEY"]}'}
         # the Worker destroys the sandbox when the socket closes
         async with connect(url, additional_headers=headers, open_timeout=30) as socket:
-            await socket.send(STDIO_REPL)
             yield CloudflareSandboxSession(socket)
 
 
 if __name__ == '__main__':
-    main('cloudflare_sandbox', 'Cloudflare sandbox', CloudflareSandboxPool())
+    main(
+        'cloudflare_sandbox',
+        'Cloudflare sandbox',
+        'https://developers.cloudflare.com/sandbox/',
+        CloudflareSandboxPool(),
+    )

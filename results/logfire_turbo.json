@@ -1,29 +1,186 @@
 {
-  "provider": "Logfire (turbo)",
-  "date": "2026-11-24",
+  "provider": "Pydantic Logfire (turbo)",
+  "url": "https://pydantic.dev/docs/logfire/agent-sandboxes/",
+  "date": "2026-11-25",
   "location": "GCP us-east4-a",
   "sessions": 15,
-  "note": "Logfire with `pre_warm=5`, which keeps a buffer of sessions ready to use at checkout.",
+  "note": "Pydantic Logfire with `pre_warm=5`: the client keeps five sessions open in the background, so asking for one takes a session that already exists instead of waiting for one to start. They are opened before the timer starts, and the second the benchmark waits between sessions is enough for the pool to refill. Every other row starts its sandbox inside the timed part.",
   "cases": {
     "1 + 1": {
-      "median": 21,
-      "min": 18,
-      "max": 23
+      "median": 26,
+      "min": 22,
+      "max": 31,
+      "times": [
+        29,
+        22,
+        26,
+        26,
+        27,
+        31,
+        25,
+        23,
+        26,
+        22,
+        22,
+        22,
+        29,
+        28,
+        22
+      ],
+      "end": {
+        "median": 0,
+        "min": 0,
+        "max": 2,
+        "times": [
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          2
+        ]
+      }
     },
     "one external call": {
-      "median": 33,
-      "min": 29,
-      "max": 58
+      "median": 32,
+      "min": 26,
+      "max": 37,
+      "times": [
+        36,
+        37,
+        36,
+        30,
+        34,
+        29,
+        32,
+        33,
+        34,
+        32,
+        28,
+        33,
+        32,
+        32,
+        26
+      ],
+      "end": {
+        "median": 1,
+        "min": 0,
+        "max": 1,
+        "times": [
+          0,
+          1,
+          0,
+          0,
+          1,
+          1,
+          1,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          1,
+          1
+        ]
+      }
     },
     "5 feeds": {
-      "median": 64,
-      "min": 56,
-      "max": 79
+      "median": 67,
+      "min": 57,
+      "max": 88,
+      "times": [
+        59,
+        57,
+        69,
+        57,
+        68,
+        63,
+        67,
+        68,
+        58,
+        67,
+        63,
+        81,
+        57,
+        69,
+        88
+      ],
+      "end": {
+        "median": 1,
+        "min": 0,
+        "max": 1,
+        "times": [
+          1,
+          1,
+          1,
+          0,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          1,
+          0,
+          0
+        ]
+      }
     },
     "10 feeds x 5 calls": {
-      "median": 649,
-      "min": 593,
-      "max": 729
+      "median": 618,
+      "min": 552,
+      "max": 1011,
+      "times": [
+        1011,
+        565,
+        565,
+        681,
+        650,
+        582,
+        618,
+        552,
+        601,
+        647,
+        611,
+        620,
+        615,
+        911,
+        709
+      ],
+      "end": {
+        "median": 1,
+        "min": 0,
+        "max": 1,
+        "times": [
+          1,
+          0,
+          1,
+          1,
+          0,
+          1,
+          1,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          0,
+          0
+        ]
+      }
     }
   }
 }

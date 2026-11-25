@@ -97,12 +97,30 @@ def feed(code, names):
 
 
 class DaytonaSession(Session):
-    def __init__(self, sandbox: Any, client: Any):
+    def __init__(self, sandbox: Any):
         self.sandbox = sandbox
-        self.client = client
+        self.client: httpx.Client | None = None
         self.setup = DAYTONA_SETUP
 
+    async def run(self, code: str) -> str:
+        return self.sandbox.process.code_run(code).result
+
+    async def start(self) -> httpx.Client:
+        """Start the broker in the sandbox and wait for it to answer."""
+        self.sandbox.fs.upload_file(DAYTONA_BROKER.encode(), '/home/daytona/broker.py')
+        self.sandbox.process.create_session('broker')
+        command = SessionExecuteRequest(command='python /home/daytona/broker.py', run_async=True)
+        self.sandbox.process.execute_session_command('broker', command)
+
+        preview = self.sandbox.get_preview_link(3000)
+        headers = {'x-daytona-preview-token': preview.token}
+        self.client = httpx.Client(base_url=preview.url, headers=headers, timeout=10)
+        while self.client.get('/ready').status_code != 200:
+            await asyncio.sleep(0.05)
+        return self.client
+
     async def feed_run(self, code: str, external_lookup: Functions | None = None) -> Any:
+        client = self.client or await self.start()
         functions = external_lookup or {}
         source = f'{self.setup}\nfeed({code!r}, {list(functions)!r})'
         self.setup = ''
@@ -111,12 +129,12 @@ class DaytonaSession(Session):
         run.start()
         try:
             while True:
-                message = self.client.get('/pending').json()
+                message = client.get('/pending').json()
                 if message is None:
                     if not run.is_alive():
                         raise RuntimeError('the feed ended without a result')
                 elif 'call' in message:
-                    self.client.post(f'/reply/{message["id"]}', json=answer(message, functions))
+                    client.post(f'/reply/{message["id"]}', json=answer(message, functions))
                 elif 'error' in message:
                     raise RuntimeError(message['error'])
                 else:
@@ -132,22 +150,14 @@ class DaytonaPool(Pool):
     @asynccontextmanager
     async def checkout(self) -> AsyncIterator[DaytonaSession]:
         sandbox = self.daytona.create()
+        session = DaytonaSession(sandbox)
         try:
-            sandbox.fs.upload_file(DAYTONA_BROKER.encode(), '/home/daytona/broker.py')
-            sandbox.process.create_session('broker')
-            command = SessionExecuteRequest(command='python /home/daytona/broker.py', run_async=True)
-            sandbox.process.execute_session_command('broker', command)
-
-            preview = sandbox.get_preview_link(3000)
-            headers = {'x-daytona-preview-token': preview.token}
-            with httpx.Client(base_url=preview.url, headers=headers, timeout=10) as client:
-                # wait for the broker to start
-                while client.get('/ready').status_code != 200:
-                    await asyncio.sleep(0.05)
-                yield DaytonaSession(sandbox, client)
+            yield session
         finally:
+            if session.client is not None:
+                session.client.close()
             self.daytona.delete(sandbox)
 
 
 if __name__ == '__main__':
-    main('daytona', 'Daytona', DaytonaPool())
+    main('daytona', 'Daytona', 'https://www.daytona.io', DaytonaPool())

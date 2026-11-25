@@ -17,6 +17,8 @@ linked above only documents connecting over SSH, which is what we send those JSO
 
 import asyncio
 import os
+import shlex
+import shutil
 import subprocess
 import tempfile
 from collections.abc import AsyncIterator
@@ -24,25 +26,11 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from boat_sdk import ApiClient, Configuration, wait_until_ready, write_text
+from boat_sdk import ApiClient, Configuration, exec_command, wait_until_ready, write_text
 from boat_sdk.api.boat_api import BoatApi
 from boat_sdk.models import CreateSandboxRequest, SshKeyRequest
 
 from .shared import STDIO_REPL, Pool, StdioSession, main
-
-
-class BoatSession(StdioSession):
-    def __init__(self, process: asyncio.subprocess.Process):
-        self.process = process
-
-    async def write(self, line: str) -> None:
-        assert self.process.stdin
-        self.process.stdin.write(line.encode())
-        await self.process.stdin.drain()
-
-    async def readline(self) -> str:
-        assert self.process.stdout
-        return (await self.process.stdout.readline()).decode()
 
 
 def boat_ssh(boat: Any, sandbox_id: str, directory: str) -> list[str]:
@@ -64,6 +52,43 @@ def boat_ssh(boat: Any, sandbox_id: str, directory: str) -> list[str]:
     return ['ssh', '-i', key, '-p', port, *(arg for o in options for arg in ('-o', o)), f'{reply.ssh_user}@{host}']
 
 
+class BoatSession(StdioSession):
+    def __init__(self, boat: BoatApi, sandbox_id: str):
+        self.boat = boat
+        self.sandbox_id = sandbox_id
+        self.directory: str | None = None
+        self.process: asyncio.subprocess.Process | None = None
+
+    async def run(self, code: str) -> str:
+        done: Any = exec_command(self.boat, self.sandbox_id, f'python3 -c {shlex.quote(code)}')
+        return done.actual_instance.stdout
+
+    async def start(self) -> None:
+        write_text(self.boat, self.sandbox_id, 'repl.py', STDIO_REPL)
+        self.directory = tempfile.mkdtemp()
+        ssh = boat_ssh(self.boat, self.sandbox_id, self.directory)
+        self.process = await asyncio.create_subprocess_exec(
+            *ssh, 'python3', '-u', 'repl.py', stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE
+        )
+
+    async def write(self, line: str) -> None:
+        assert self.process and self.process.stdin
+        self.process.stdin.write(line.encode())
+        await self.process.stdin.drain()
+
+    async def readline(self) -> str:
+        assert self.process and self.process.stdout
+        return (await self.process.stdout.readline()).decode()
+
+    async def close(self) -> None:
+        if self.process is not None:
+            if self.process.returncode is None:
+                self.process.kill()
+            await self.process.wait()
+        if self.directory is not None:
+            shutil.rmtree(self.directory)
+
+
 class BoatPool(Pool):
     """boat's commands have no stdin, so the REPL is run over `ssh`, as its docs say to for piped input."""
 
@@ -77,21 +102,14 @@ class BoatPool(Pool):
         sandbox_id = boat.create(create_sandbox_request=CreateSandboxRequest(ttl_seconds=600)).sandbox.id
         try:
             wait_until_ready(boat, sandbox_id, poll_interval_seconds=0.1)
-            write_text(boat, sandbox_id, 'repl.py', STDIO_REPL)
-            with tempfile.TemporaryDirectory() as directory:
-                ssh = boat_ssh(boat, sandbox_id, directory)
-                process = await asyncio.create_subprocess_exec(
-                    *ssh, 'python3', '-u', 'repl.py', stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE
-                )
-                try:
-                    yield BoatSession(process)
-                finally:
-                    if process.returncode is None:
-                        process.kill()
-                    await process.wait()
+            session = BoatSession(boat, sandbox_id)
+            try:
+                yield session
+            finally:
+                await session.close()
         finally:
             boat.delete_sandbox(sandbox_id=sandbox_id, x_ascii_confirm_delete=sandbox_id)
 
 
 if __name__ == '__main__':
-    main('boat', 'boat.dev', BoatPool())
+    main('boat', 'boat.dev', 'https://boat.dev', BoatPool())

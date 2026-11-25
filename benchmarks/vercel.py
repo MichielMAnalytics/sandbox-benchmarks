@@ -26,8 +26,19 @@ from .shared import STDIO_REPL, Pool, StdioSession, main
 
 
 class VercelSession(StdioSession):
-    def __init__(self, command: Any):
-        self.command = command
+    def __init__(self, box: Any):
+        self.box = box
+        self.command: Any = None
+
+    async def run(self, code: str) -> str:
+        done = await self.box.run_command('python3', ['-c', code], capture_output=True)
+        return done.stdout.decode()
+
+    async def start(self) -> None:
+        await self.box.fs.write_text('repl.py', STDIO_REPL)
+        self.command = await self.box.create_command(
+            'python3', ['-u', 'repl.py'], stdin=subprocess.PIPE, stderr=subprocess.DEVNULL
+        )
 
     async def write(self, line: str) -> None:
         await self.command.stdin.send(line.encode())
@@ -41,16 +52,14 @@ class VercelPool(Pool):
     async def checkout(self) -> AsyncIterator[VercelSession]:
         # leaving the block stops and deletes the sandbox; persistent=False skips the snapshot it would take
         async with sandbox.create_sandbox(image='vercel/sandbox/python:3.15', persistent=False) as box:
-            await box.fs.write_text('repl.py', STDIO_REPL)
-            command = await box.create_command(
-                'python3', ['-u', 'repl.py'], stdin=subprocess.PIPE, stderr=subprocess.DEVNULL
-            )
+            session = VercelSession(box)
             try:
-                yield VercelSession(command)
+                yield session
             finally:
                 # an output stream left open gives 'asynchronous generator is already running' at exit
-                await command.stdout.aclose()
+                if session.command is not None:
+                    await session.command.stdout.aclose()
 
 
 if __name__ == '__main__':
-    main('vercel', 'Vercel', VercelPool())
+    main('vercel', 'Vercel', 'https://vercel.com/docs/sandbox', VercelPool())

@@ -1,32 +1,109 @@
 {
   "provider": "boat.dev",
-  "date": "2026-11-24",
+  "url": "https://boat.dev",
+  "date": "2026-11-25",
   "location": "GCP us-east4-a",
   "sessions": 5,
   "note": "Five sessions per case, to stay inside boat.dev's start limits. Its sandboxes are all in the EU.",
   "cases": {
     "1 + 1": {
-      "median": 2524,
-      "min": 2504,
-      "max": 3371
+      "median": 1443,
+      "min": 1103,
+      "max": 1507,
+      "times": [
+        1482,
+        1507,
+        1355,
+        1103,
+        1443
+      ],
+      "end": {
+        "median": 168,
+        "min": 147,
+        "max": 209,
+        "times": [
+          168,
+          172,
+          209,
+          153,
+          147
+        ]
+      }
     },
     "one external call": {
-      "median": 3005,
-      "min": 2476,
-      "max": 3315,
-      "refused": 25
+      "median": 2817,
+      "min": 2462,
+      "max": 3180,
+      "times": [
+        2998,
+        2817,
+        2571,
+        3180,
+        2462
+      ],
+      "end": {
+        "median": 151,
+        "min": 142,
+        "max": 165,
+        "times": [
+          151,
+          151,
+          148,
+          165,
+          142
+        ]
+      },
+      "refused": 8
     },
     "5 feeds": {
-      "median": 2853,
-      "min": 2744,
-      "max": 3026,
-      "refused": 11
+      "median": 2890,
+      "min": 2677,
+      "max": 2997,
+      "times": [
+        2894,
+        2890,
+        2997,
+        2677,
+        2863
+      ],
+      "end": {
+        "median": 160,
+        "min": 145,
+        "max": 232,
+        "times": [
+          145,
+          232,
+          160,
+          160,
+          158
+        ]
+      },
+      "refused": 7
     },
     "10 feeds x 5 calls": {
-      "median": 7387,
-      "min": 7260,
-      "max": 8656,
-      "refused": 6
+      "median": 7910,
+      "min": 7407,
+      "max": 9460,
+      "times": [
+        7407,
+        7462,
+        7910,
+        9460,
+        8343
+      ],
+      "end": {
+        "median": 144,
+        "min": 142,
+        "max": 163,
+        "times": [
+          142,
+          143,
+          163,
+          144,
+          150
+        ]
+      },
+      "refused": 7
     }
   }
 }

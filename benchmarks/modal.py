@@ -22,9 +22,18 @@ from .shared import STDIO_REPL, Pool, StdioSession, main
 
 
 class ModalSession(StdioSession):
-    def __init__(self, process: Any):
-        self.process = process
-        self.lines = aiter(process.stdout)
+    def __init__(self, sandbox: Any):
+        self.sandbox = sandbox
+        self.process: Any = None
+        self.lines: Any = None
+
+    async def run(self, code: str) -> str:
+        process = await self.sandbox.exec.aio('python', '-c', code)
+        return await process.stdout.read.aio()
+
+    async def start(self) -> None:
+        self.process = await self.sandbox.exec.aio('python', '-u', '-c', STDIO_REPL, bufsize=1)
+        self.lines = aiter(self.process.stdout)
 
     async def write(self, line: str) -> None:
         self.process.stdin.write(line)
@@ -46,11 +55,10 @@ class ModalPool(Pool):
             self.app = await modal.App.lookup.aio('sandbox-benchmarks', create_if_missing=True)
         sandbox = await modal.Sandbox.create.aio(app=self.app)
         try:
-            process = await sandbox.exec.aio('python', '-u', '-c', STDIO_REPL, bufsize=1)
-            yield ModalSession(process)
+            yield ModalSession(sandbox)
         finally:
             await sandbox.terminate.aio()
 
 
 if __name__ == '__main__':
-    main('modal', 'Modal', ModalPool())
+    main('modal', 'Modal', 'https://modal.com/docs/guide/sandboxes', ModalPool())

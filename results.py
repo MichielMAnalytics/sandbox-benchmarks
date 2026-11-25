@@ -23,7 +23,7 @@ def table(ranges: bool = False) -> str:
     rows = [['Provider', *(f'`{case}`' if case == '1 + 1' else case for case in cases)]]
     fastest = {case: min(r['cases'][case]['median'] for r in results) for case in cases}
     for r in results:
-        row = [r['provider']]
+        row = [f'[{r["provider"]}]({r["url"]})']
         for case in cases:
             c = r['cases'][case]
             if ranges:
@@ -44,7 +44,7 @@ def table(ranges: bool = False) -> str:
     dates = sorted({r['date'] for r in results})
     when = dates[0] if len(dates) == 1 else f'{dates[0]} to {dates[-1]}'
     kind = 'Minimum to maximum' if ranges else 'Median'
-    intro = f'{kind} milliseconds from {location}, {when}, from checking out a new session to that session ending:'
+    intro = f'{kind} milliseconds from {location}, {when}, from asking for a new session to having the result:'
     notes = []
     for r in results:
         elsewhere = f'Run from {r["location"]}. ' if r['location'] != location else ''
