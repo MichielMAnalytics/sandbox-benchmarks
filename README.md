@@ -1,8 +1,8 @@
 # Sandbox Benchmarks
 
 An experiment comparing how code running in a remote sandbox can call functions on the host machine, across
-seven sandbox providers: Pydantic Logfire Agent Sandboxes, Modal, E2B, Daytona, Vercel Sandbox, Cloudflare sandboxes
-and boat.dev.
+eight sandbox providers: Pydantic Logfire Agent Sandboxes, Modal, E2B, Daytona, Vercel Sandbox, Cloudflare sandboxes,
+boat.dev and boxd.
 
 Each script in `play_tune/` runs the same program in a sandbox, a tune that calls `play(note, seconds)` 78
 times, and the host plays each note through the speakers. The modules in `benchmarks/` time five
@@ -49,6 +49,7 @@ uv sync
 | Daytona                  | `benchmarks.daytona`            | `DAYTONA_API_KEY`                                                                                   |
 | Vercel                   | `benchmarks.vercel`             | `VERCEL_OIDC_TOKEN`, which `vercel env pull` writes and which lasts 12 hours                        |
 | boat.dev                 | `benchmarks.boat`               | `BOAT_API_KEY`, and `ssh` on your machine                                                           |
+| boxd                     | `benchmarks.boxd`               | `BOXD_API_KEY`                                                                                      |
 
 Run a module from the root of the repo, with the number of sessions per case (5 if you leave it out):
 
