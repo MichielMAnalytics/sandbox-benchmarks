@@ -1,0 +1,28 @@
+{
+  "provider": "E2B",
+  "date": "2026-11-24",
+  "location": "GCP us-east4-a",
+  "sessions": 15,
+  "cases": {
+    "1 + 1": {
+      "median": 698,
+      "min": 531,
+      "max": 2122
+    },
+    "one external call": {
+      "median": 678,
+      "min": 603,
+      "max": 1220
+    },
+    "5 feeds": {
+      "median": 906,
+      "min": 755,
+      "max": 1165
+    },
+    "10 feeds x 5 calls": {
+      "median": 4980,
+      "min": 4807,
+      "max": 5159
+    }
+  }
+}

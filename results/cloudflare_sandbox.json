@@ -1,0 +1,29 @@
+{
+  "provider": "Cloudflare sandbox",
+  "date": "2026-11-24",
+  "location": "GCP us-east4-a",
+  "sessions": 15,
+  "note": "Times leave out deleting the container, which the Worker does after the session ends.",
+  "cases": {
+    "1 + 1": {
+      "median": 849,
+      "min": 476,
+      "max": 1055
+    },
+    "one external call": {
+      "median": 902,
+      "min": 570,
+      "max": 1607
+    },
+    "5 feeds": {
+      "median": 933,
+      "min": 730,
+      "max": 1909
+    },
+    "10 feeds x 5 calls": {
+      "median": 2668,
+      "min": 2455,
+      "max": 3946
+    }
+  }
+}

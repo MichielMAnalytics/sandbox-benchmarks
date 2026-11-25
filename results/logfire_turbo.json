@@ -1,0 +1,29 @@
+{
+  "provider": "Logfire (turbo)",
+  "date": "2026-11-24",
+  "location": "GCP us-east4-a",
+  "sessions": 15,
+  "note": "Logfire with `pre_warm=5`, which keeps a buffer of sessions ready to use at checkout.",
+  "cases": {
+    "1 + 1": {
+      "median": 21,
+      "min": 18,
+      "max": 23
+    },
+    "one external call": {
+      "median": 33,
+      "min": 29,
+      "max": 58
+    },
+    "5 feeds": {
+      "median": 64,
+      "min": 56,
+      "max": 79
+    },
+    "10 feeds x 5 calls": {
+      "median": 649,
+      "min": 593,
+      "max": 729
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // The Worker the Cloudflare sandbox scripts talk to. Cloudflare has no hosted API for its sandboxes, so
+  // this has to be deployed: `npm install && npx wrangler deploy`, then `npx wrangler secret put API_KEY`.
+  "name": "sandbox-host-function",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-24",
+  "containers": [
+    {
+      "class_name": "Sandbox",
+      "scheduling_policy": "durable_object",
+      "images": { "python": { "dockerfile": "./Dockerfile" } },
+    },
+  ],
+  "durable_objects": { "bindings": [{ "class_name": "Sandbox", "name": "SANDBOX" }] },
+  "exports": { "Sandbox": { "type": "durable-object", "storage": "sqlite" } },
+}

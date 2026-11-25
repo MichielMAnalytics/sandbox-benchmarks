@@ -1,0 +1,33 @@
+[project]
+name = "sandbox-benchmarks"
+version = "0.1.0"
+requires-python = ">=3.15"
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = [
+    "boat-sdk>=1.13.0",
+    "daytona>=0.232.0",
+    "e2b-code-interpreter>=2.11.10",
+    "httpx>=0.28.1",
+    "logfire[agent-sandboxes]>=5.6.0",
+    "modal>=1.6.4",
+    "numpy>=2.5.5",
+    "pillow>=13.0.0",
+    "pydantic-monty-client==1.7.0b1",
+    "sounddevice>=0.5.6",
+    "vercel-sandbox>=1.2.0",
+    "websockets>=17.4",
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.ruff.lint.per-file-ignores]
+# the examples are kept short, and report any failure of a host function back to the sandbox
+"play_tune/*" = ["BLE001", "SIM117"]
+
+[tool.ruff.format]
+quote-style = "single"

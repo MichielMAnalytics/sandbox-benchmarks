@@ -1,0 +1,32 @@
+{
+  "provider": "boat.dev",
+  "date": "2026-11-24",
+  "location": "GCP us-east4-a",
+  "sessions": 5,
+  "note": "Five sessions per case, to stay inside boat.dev's start limits. Its sandboxes are all in the EU.",
+  "cases": {
+    "1 + 1": {
+      "median": 2524,
+      "min": 2504,
+      "max": 3371
+    },
+    "one external call": {
+      "median": 3005,
+      "min": 2476,
+      "max": 3315,
+      "refused": 25
+    },
+    "5 feeds": {
+      "median": 2853,
+      "min": 2744,
+      "max": 3026,
+      "refused": 11
+    },
+    "10 feeds x 5 calls": {
+      "median": 7387,
+      "min": 7260,
+      "max": 8656,
+      "refused": 6
+    }
+  }
+}

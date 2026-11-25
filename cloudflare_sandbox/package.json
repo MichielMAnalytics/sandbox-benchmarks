@@ -1,0 +1,8 @@
+{
+  "name": "sandbox-benchmarks",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "wrangler": "^4.164.0"
+  }
+}

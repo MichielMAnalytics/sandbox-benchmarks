@@ -1,0 +1,10 @@
+.env
+.venv
+__pycache__
+.ruff_cache
+gcp_bench_output*.txt
+.vercel
+.env*
+logos/
+sandbox_balls.mp4
+play_tune/play_tune_self_contained.py

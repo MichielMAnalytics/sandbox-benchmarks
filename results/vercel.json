@@ -1,0 +1,28 @@
+{
+  "provider": "Vercel",
+  "date": "2026-11-24",
+  "location": "GCP us-east4-a",
+  "sessions": 15,
+  "cases": {
+    "1 + 1": {
+      "median": 2370,
+      "min": 2156,
+      "max": 3810
+    },
+    "one external call": {
+      "median": 2246,
+      "min": 1800,
+      "max": 3431
+    },
+    "5 feeds": {
+      "median": 2434,
+      "min": 2029,
+      "max": 3337
+    },
+    "10 feeds x 5 calls": {
+      "median": 6203,
+      "min": 5217,
+      "max": 7787
+    }
+  }
+}

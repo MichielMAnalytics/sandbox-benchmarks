@@ -1,0 +1,28 @@
+{
+  "provider": "Logfire",
+  "date": "2026-11-24",
+  "location": "GCP us-east4-a",
+  "sessions": 15,
+  "cases": {
+    "1 + 1": {
+      "median": 94,
+      "min": 40,
+      "max": 211
+    },
+    "one external call": {
+      "median": 107,
+      "min": 98,
+      "max": 153
+    },
+    "5 feeds": {
+      "median": 144,
+      "min": 120,
+      "max": 216
+    },
+    "10 feeds x 5 calls": {
+      "median": 738,
+      "min": 668,
+      "max": 986
+    }
+  }
+}

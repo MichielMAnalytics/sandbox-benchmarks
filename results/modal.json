@@ -1,0 +1,28 @@
+{
+  "provider": "Modal",
+  "date": "2026-11-24",
+  "location": "GCP us-east4-a",
+  "sessions": 15,
+  "cases": {
+    "1 + 1": {
+      "median": 398,
+      "min": 339,
+      "max": 1915
+    },
+    "one external call": {
+      "median": 494,
+      "min": 307,
+      "max": 804
+    },
+    "5 feeds": {
+      "median": 482,
+      "min": 391,
+      "max": 1029
+    },
+    "10 feeds x 5 calls": {
+      "median": 1407,
+      "min": 1264,
+      "max": 4342
+    }
+  }
+}
