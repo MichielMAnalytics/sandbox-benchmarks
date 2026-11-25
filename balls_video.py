@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-# results file, icon in logos/, ball colour
+# how to draw each results file: its icon in logos/ and its ball colour. The names and times come from results/
 STYLES = {
     'logfire_turbo': ('pydantic.dev', (230, 32, 225)),
     'logfire': ('pydantic.dev', (240, 150, 200)),
@@ -28,26 +28,28 @@ STYLES = {
 ROOT = Path(__file__).parent
 
 
-def providers() -> list[tuple[str, int, str, tuple[int, int, int]]]:
-    """Name, median ms for `1 + 1`, icon and colour of each provider in results/, fastest first."""
+def providers() -> list[tuple[str, int, str | None, tuple[int, int, int]]]:
+    """Name, median ms for `1 + 1`, icon and colour of every provider in results/, fastest first."""
     found = []
-    for key, (icon, colour) in STYLES.items():
-        result = json.loads((ROOT / 'results' / f'{key}.json').read_text())
+    for path in (ROOT / 'results').glob('*.json'):
+        result = json.loads(path.read_text())
+        # a provider with no entry in STYLES gets a grey ball and no icon
+        icon, colour = STYLES.get(path.stem, (None, (150, 150, 150)))
         found.append((result['provider'], result['cases']['1 + 1']['median'], icon, colour))
     return sorted(found, key=lambda p: p[1])
 
 
 PROVIDERS = providers()
-W, H, FPS, SECONDS = 1200, 1080, 60, 40
+W, H, FPS, SECONDS = 1280, 1080, 60, 30
 SLOWDOWN = 15
 DARK = (62, 62, 62)
 PANEL = (236, 236, 236)
-FRAME = (50, 180, 1150, 1050)
+FRAME = (50, 180, 1230, 1050)
 BORDER = 12
 ROW_H = (FRAME[3] - FRAME[1] - 2 * BORDER - 16) // len(PROVIDERS)
 ROW_TOP = FRAME[1] + BORDER + 8
 ICON = 60
-LABEL_X0, LABEL_X1 = 140, 590
+LABEL_X0, LABEL_X1 = 140, 650
 RADIUS = ROW_H // 2 - 4
 # the ball's centre goes between these
 TRACK_X0, TRACK_X1 = LABEL_X1 + 6 + RADIUS, FRAME[2] - BORDER - 6 - RADIUS
@@ -72,8 +74,9 @@ def background() -> Image.Image:
     for i, (name, ms, icon, _) in enumerate(PROVIDERS):
         y0 = ROW_TOP + i * ROW_H
         y = y0 + ROW_H // 2
-        logo = Image.open(ROOT / 'logos' / f'{icon}.png').convert('RGBA').resize((ICON, ICON), Image.LANCZOS)
-        img.paste(logo, (FRAME[0] + BORDER + 10, y - ICON // 2), logo)
+        if icon:
+            logo = Image.open(ROOT / 'logos' / f'{icon}.png').convert('RGBA').resize((ICON, ICON), Image.LANCZOS)
+            img.paste(logo, (FRAME[0] + BORDER + 10, y - ICON // 2), logo)
         d.rectangle((LABEL_X0, y0 + 4, LABEL_X1, y0 + ROW_H - 4), fill=DARK)
         d.text(((LABEL_X0 + LABEL_X1) // 2, y), f'{name} ({ms}ms)', font=label_font, fill='white', anchor='mm')
     return img
