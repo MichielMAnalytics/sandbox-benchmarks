@@ -71,9 +71,11 @@ set -uo pipefail
 
 echo "# $(date -u +%FT%TZ) $(curl -s -H Metadata-Flavor:Google \
     http://metadata.google.internal/computeMetadata/v1/instance/zone | sed 's|.*/||') n=$N"
-# which Cloudflare location serves this VM, and how far away it is
-echo "# cloudflare $(curl -s https://www.cloudflare.com/cdn-cgi/trace | grep colo=) $(curl -s -o /dev/null \
-    -w 'tcp connect %{time_connect}s' https://www.cloudflare.com/cdn-cgi/trace)"
+# Logfire's endpoint is behind Cloudflare, and which of its locations a VM is sent to changes Logfire's times:
+# print the location, the time to connect to it, and the time of a request to Logfire itself on an open connection
+logfire=https://logfire-us.pydantic.dev
+echo "# logfire $(curl -s $logfire/cdn-cgi/trace | grep colo=) $(curl -s -o /dev/null -o /dev/null \
+    -w 'tcp connect %{time_connect}s request %{time_total}s ' $logfire/ $logfire/)"
 for entry in $PROVIDERS; do
     # `name:n` gives that provider its own number of sessions
     provider=${entry%%:*}

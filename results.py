@@ -20,7 +20,7 @@ def table(ranges: bool = False) -> str:
     results = [json.loads(path.read_text()) for path in sorted((ROOT / 'results').glob('*.json'))]
     cases = list(results[0]['cases'])
     results.sort(key=lambda r: r['cases'][cases[0]]['median'])
-    rows = [['Provider', *(f'`{case}`' if case == '1 + 1' else case for case in cases)]]
+    rows = [['Provider', *(case.replace('1 + 1', '`1 + 1`') for case in cases)]]
     fastest = {case: min(r['cases'][case]['median'] for r in results) for case in cases}
     for r in results:
         row = [f'[{r["provider"]}]({r["url"]})']

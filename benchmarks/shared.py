@@ -1,7 +1,7 @@
-"""The four benchmark cases, and the pieces the providers without host function calls share.
+"""The five benchmark cases, and the pieces the providers without host function calls share.
 
-Each provider module in this directory has a `Pool`, whose `checkout()` gives a new `Session`. `1 + 1` uses
-the session's `run`, which is the provider's own way of running a program. The other cases use `feed_run`,
+Each provider module in this directory has a `Pool`, whose `checkout()` gives a new `Session`. `1 + 1 direct`
+uses the session's `run`, which is the provider's own way of running a program. The other cases use `feed_run`,
 which keeps state and calls host functions: Logfire has that built in, and each of the others starts a small
 REPL in the sandbox for it, using the transport its docs recommend (see the scripts in play_tune/).
 
@@ -99,6 +99,12 @@ EXT = {'external_lookup': {'get_name': get_name, 'double': double}}
 
 
 async def case_1_plus_1(s: Session) -> None:
+    # through `feed_run`, so it pays for what state and host functions need, as most real uses do
+    assert await s.feed_run('1 + 1', **EXT) == 2
+
+
+async def case_1_plus_1_direct(s: Session) -> None:
+    # the same sum run the provider's own way, with no state or host functions
     assert (await s.run('print(1 + 1)')).strip() == '2'
 
 
@@ -118,6 +124,7 @@ async def case_10_feeds_5_calls(s: Session) -> None:
 
 CASES = [
     ('1 + 1', case_1_plus_1),
+    ('1 + 1 direct', case_1_plus_1_direct),
     ('one external call', case_one_call),
     ('5 feeds', case_5_feeds),
     ('10 feeds x 5 calls', case_10_feeds_5_calls),
@@ -179,7 +186,7 @@ async def run_pool(key: str, pool: Pool, n: int) -> dict[str, Any]:
 
 
 def main(key: str, provider: str, url: str, pool: Pool) -> None:
-    """Run the four cases against a pool, each timed from asking for a new session to having the result.
+    """Run the five cases against a pool, each timed from asking for a new session to having the result.
 
     `key` names the results file, and `provider` and `url` are the name shown in the table and what it links to. With `--save LOCATION` the
     run replaces `results/<key>.json`, keeping the note of the file it replaces.

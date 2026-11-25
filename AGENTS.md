@@ -19,14 +19,14 @@ seven sandbox providers. Each script runs the same sandboxed program, a tune tha
   Worker in `cloudflare_sandbox/`, which passes it to the stdin and stdout of the program in a container.
 - `play_tune_boat.py`: boat.dev. The same JSON-lines protocol, over `ssh`, since its commands have no stdin.
 
-`benchmarks/` has one module per provider, each running the same four cases:
+`benchmarks/` has one module per provider, each running the same five cases:
 
-- `shared.py`: the `Pool` and `Session` base classes, the four cases, the loop that times each from asking
+- `shared.py`: the `Pool` and `Session` base classes, the five cases, the loop that times each from asking
   for a new session to having the result, and the REPL the providers other than Logfire and Daytona run in
   the sandbox.
 - `logfire.py`, `logfire_turbo.py` (Logfire with `pre_warm`), `modal.py`, `e2b.py`, `daytona.py`, `vercel.py`,
   `cloudflare_sandbox.py`, `boat.py`: a `Pool` whose `checkout()` gives a `Session`. Its `run(code)` runs a program
-  the provider's own way and is what `1 + 1` uses; its `feed_run(code, external_lookup=...)` has Monty's
+  the provider's own way and is what `1 + 1 direct` uses; its `feed_run(code, external_lookup=...)` has Monty's
   interface, and for that each provider but Logfire starts a small REPL in the sandbox over the
   same transport as its `play_tune_*.py` script, so state survives between feeds and each feed returns its
   last expression. To add a provider, add a module with a `Pool` and a `Session` and call `main`.
@@ -103,11 +103,17 @@ Only commit results run from a GCP VM in `us-east4` (`gcp_bench.sh` saves them a
 times from different places cannot be compared.
 
 Each time runs from entering `checkout()` to having the result, so for every provider but Logfire it includes
-creating the sandbox, and for the three cases that use `feed_run`, starting the REPL. Ending the session, which
+creating the sandbox, and for the four cases that use `feed_run`, starting the REPL. `1 + 1 direct` is `1 + 1`
+through `run` instead, to show what the REPL costs. Ending the session, which
 for most means deleting the sandbox, is timed separately and saved under `end`; the table does not show it.
 
 ## Known behaviour
 
+- Logfire's times vary between VMs for a reason not yet found. On 2026-11-25 one full run from `us-east4-a` gave
+  45ms for Logfire (turbo) at `1 + 1 direct`, 218ms for Logfire and 4715ms for its `10 feeds x 5 calls`; five other VMs
+  in the same zone that day gave 21 to 26ms, 46 to 99ms and 661 to 847ms. The Logfire results in `results/` are
+  from a second VM half an hour after that slow run, and the other providers' are from the slow run's VM.
+  `gcp_bench.sh` prints the Cloudflare location serving Logfire's endpoint and the time of a request to it.
 - GCP `us-east4` VMs reach Cloudflare at different locations (IAD at 3ms, ATL at 10 to 18ms, EWR at 35ms have
   all been seen), and Logfire's US endpoint is that much slower per round trip from a VM with a slow one.
   Check the `# cloudflare colo=` line `gcp_bench.sh` prints before comparing Logfire runs.
